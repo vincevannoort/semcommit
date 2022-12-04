@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 console = "0.15.2"
 dialoguer = {version="0.10.2", features=["fuzzy-select"]}
+serde = "1.0.148"
+serde_derive = "1.0.148"
+toml = "0.5.9"
