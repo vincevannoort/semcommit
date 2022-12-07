@@ -5,6 +5,9 @@ edition = "2021"
 authors = ["Vince van Noort <vincevannoort@gmail.com>"]
 description = "A command line tool to generate semantic commit messages"
 license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/crate/semcommit/latest"
+homepage = "https://docs.rs/crate/semcommit/latest"
+repository = "https://github.com/vincevannoort/semcommit"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
