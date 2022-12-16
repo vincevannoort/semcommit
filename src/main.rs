@@ -7,19 +7,32 @@ use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::process::Command;
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter};
 
-#[derive(Debug, Deserialize, Serialize)]
-struct Defaults {
+#[derive(Debug, Deserialize, Serialize, Default)]
+struct Config {
     commit_type: String,
     commit_project: String,
 }
 
-impl Defaults {
-    fn read_from_file() -> Self {
+#[derive(Display, EnumIter)]
+enum CommitType {
+    feat,
+    fix,
+    docs,
+    style,
+    refactor,
+    test,
+    chore,
+}
+
+impl Config {
+    fn read_from_file() -> Option<Self> {
         let binding = env::temp_dir();
         let dir = binding.to_str().unwrap();
         let location = format!("{dir}/.semcommit-defaults");
-        let mut defaults: Defaults = Defaults {
+        let mut defaults: Config = Config {
             commit_type: "feat".to_string(),
             commit_project: "none".to_string(),
         };
@@ -28,10 +41,9 @@ impl Defaults {
             let mut result: String = String::new();
             let mut file = OpenOptions::new().read(true).open(&location).unwrap();
             file.read_to_string(&mut result).unwrap();
-            defaults = toml::from_str(&result).unwrap();
-            println!("{:?}", defaults);
+            defaults = toml::from_str(&result).unwrap_or_default();
         }
-        return defaults;
+        return Some(defaults);
     }
     fn store_in_file(&self) {
         let binding = env::temp_dir();
@@ -41,6 +53,7 @@ impl Defaults {
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
+            .truncate(true)
             .open(&location)
             .unwrap();
         file.write_all(string_write.as_bytes()).unwrap();
@@ -48,8 +61,16 @@ impl Defaults {
 }
 
 fn main() {
-    let defaults = Defaults::read_from_file();
+    let config_from_temporary_file = Config::read_from_file();
     let theme = ColorfulTheme::default();
+
+    let config: Config = match config_from_temporary_file {
+        Some(default) => default,
+        None => Config {
+            commit_type: CommitType::feat.to_string(),
+            commit_project: "example".to_string(),
+        },
+    };
 
     println!("{}", style("Format your commit message:").bold());
     let _type = format!("{}", style("type").magenta().bold());
@@ -57,11 +78,12 @@ fn main() {
     let _message = format!("{}", style("message").blue().bold());
     println!("{}({}): {}\n", _type, _project, _message);
 
-    let items = vec!["feat", "fix", "docs", "style", "refactor", "test", "chore"];
+    let items: Vec<String> = CommitType::iter().map(|ct| ct.to_string()).collect();
+    let default_item_pos = items.iter().position(|i| i == &config.commit_type);
     let commit_type_index = FuzzySelect::with_theme(&theme)
         .with_prompt(_type)
         .items(&items)
-        .default(0)
+        .default(default_item_pos.unwrap_or(0))
         .interact_on_opt(&Term::stderr())
         .unwrap()
         .unwrap();
@@ -69,7 +91,7 @@ fn main() {
 
     let commit_project: String = Input::with_theme(&theme)
         .with_prompt(_project)
-        .default(defaults.commit_project)
+        .default(config.commit_project)
         .interact_text()
         .unwrap();
 
@@ -95,10 +117,11 @@ fn main() {
         println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
     }
 
-    // always store defaults, such that the user has less work in the future
-    Defaults {
+    let defaults = Config {
         commit_type: commit_type,
         commit_project: commit_project,
-    }
-    .store_in_file();
+    };
+
+    // always store defaults, such that the user has less work in the future
+    defaults.store_in_file();
 }

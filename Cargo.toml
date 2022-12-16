@@ -17,4 +17,6 @@ console = "0.15.2"
 dialoguer = {version="0.10.2", features=["fuzzy-select"]}
 serde = "1.0.148"
 serde_derive = "1.0.148"
+strum = "0.24.1"
+strum_macros = "0.24.3"
 toml = "0.5.9"
