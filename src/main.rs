@@ -1,5 +1,6 @@
 use console::style;
-use dialoguer::{console::Term, theme::ColorfulTheme, FuzzySelect, Input};
+use dialoguer::{console::Term, theme::ColorfulTheme, Confirm, FuzzySelect, Input};
+use regex::Regex;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::env;
@@ -60,6 +61,34 @@ impl Config {
     }
 }
 
+fn check_for_unstaged_changes() {
+    let binding = Command::new("git")
+        .arg("status")
+        .output()
+        .expect("Could not retrieve git status");
+    let git_status_output = String::from_utf8_lossy(&binding.stdout);
+    let no_changes_committed =
+        Regex::new(r"(no changes added to commit|nothing to commit, working tree clean)").unwrap();
+
+    // early exit if user has staged files
+    if !no_changes_committed.is_match(&git_status_output) {
+        return;
+    }
+
+    let user_wants_to_commit = Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt("No changes committed, want to commit them?")
+        .interact()
+        .unwrap();
+
+    if user_wants_to_commit {
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .output()
+            .expect("Could not add files");
+    }
+}
+
 fn main() {
     let config_from_temporary_file = Config::read_from_file();
     let theme = ColorfulTheme::default();
@@ -71,6 +100,8 @@ fn main() {
             commit_project: "example".to_string(),
         },
     };
+
+    check_for_unstaged_changes();
 
     println!("{}", style("Format your commit message:").bold());
     let _type = format!("{}", style("type").magenta().bold());

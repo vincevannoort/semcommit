@@ -15,6 +15,7 @@ pre-release-commit-message = "chore(version): release {{crate_name}} version {{v
 [dependencies]
 console = "0.15.2"
 dialoguer = {version="0.10.2", features=["fuzzy-select"]}
+regex = "1.7.1"
 serde = "1.0.148"
 serde_derive = "1.0.148"
 strum = "0.24.1"
