@@ -68,7 +68,7 @@ fn check_for_unstaged_changes() {
         .expect("Could not retrieve git status");
     let git_status_output = String::from_utf8_lossy(&binding.stdout);
     let no_changes_committed =
-        Regex::new(r"(no changes added to commit|nothing to commit, working tree clean)").unwrap();
+        Regex::new(r"(no changes added to commit|nothing to commit, working tree clean|nothing added to commit but untracked files present)").unwrap();
 
     // early exit if user has staged files
     if !no_changes_committed.is_match(&git_status_output) {
