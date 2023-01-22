@@ -1,6 +1,6 @@
 [package]
 name = "semcommit"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["Vince van Noort <vincevannoort@gmail.com>"]
 description = "A command line tool to generate semantic commit messages"
