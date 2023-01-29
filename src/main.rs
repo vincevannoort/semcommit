@@ -84,7 +84,9 @@ fn check_for_unstaged_changes() {
         Command::new("git")
             .arg("add")
             .arg(".")
-            .output()
+            .spawn()
+            .expect("Could not add files")
+            .wait()
             .expect("Could not add files");
     }
 }
@@ -134,19 +136,15 @@ fn main() {
 
     let complete_commit_message = format!("{commit_type}({commit_project}): {commit_message}");
 
-    println!("\ngit commit -m \"{complete_commit_message}\"");
-    let output = Command::new("git")
+    // commit files
+    Command::new("git")
         .arg("commit")
         .arg("-m")
         .arg(&complete_commit_message)
-        .output()
-        .expect("failed to execute process");
-
-    if !output.status.success() {
-        println!("status: {}", output.status);
-        println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-        println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-    }
+        .spawn()
+        .expect("failed to commit files")
+        .wait()
+        .expect("failed to commit files");
 
     let defaults = Config {
         commit_type: commit_type,
