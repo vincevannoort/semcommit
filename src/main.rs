@@ -11,21 +11,32 @@ use std::process::Command;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Config {
     commit_type: String,
     commit_project: String,
+    commit_message: String,
 }
 
 #[derive(Display, EnumIter)]
 enum CommitType {
-    feat,
-    fix,
-    docs,
-    style,
-    refactor,
-    test,
-    chore,
+    Feat,
+    Fix,
+    Docs,
+    Style,
+    Refactor,
+    Test,
+    Chore,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            commit_type: "feat".to_string(),
+            commit_project: "none".to_string(),
+            commit_message: "something".to_string(),
+        }
+    }
 }
 
 impl Config {
@@ -33,10 +44,7 @@ impl Config {
         let binding = env::temp_dir();
         let dir = binding.to_str().unwrap();
         let location = format!("{dir}/.semcommit-defaults");
-        let mut defaults: Config = Config {
-            commit_type: "feat".to_string(),
-            commit_project: "none".to_string(),
-        };
+        let mut defaults: Config = Config::default();
 
         if Path::new(&location).exists() {
             let mut result: String = String::new();
@@ -44,7 +52,7 @@ impl Config {
             file.read_to_string(&mut result).unwrap();
             defaults = toml::from_str(&result).unwrap_or_default();
         }
-        return Some(defaults);
+        Some(defaults)
     }
     fn store_in_file(&self) {
         let binding = env::temp_dir();
@@ -55,7 +63,7 @@ impl Config {
             .write(true)
             .create(true)
             .truncate(true)
-            .open(&location)
+            .open(location)
             .unwrap();
         file.write_all(string_write.as_bytes()).unwrap();
     }
@@ -97,10 +105,7 @@ fn main() {
 
     let config: Config = match config_from_temporary_file {
         Some(default) => default,
-        None => Config {
-            commit_type: CommitType::feat.to_string(),
-            commit_project: "example".to_string(),
-        },
+        None => Config::default(),
     };
 
     check_for_unstaged_changes();
@@ -111,7 +116,9 @@ fn main() {
     let _message = format!("{}", style("message").blue().bold());
     println!("{}({}): {}\n", _type, _project, _message);
 
-    let items: Vec<String> = CommitType::iter().map(|ct| ct.to_string()).collect();
+    let items: Vec<String> = CommitType::iter()
+        .map(|ct| ct.to_string().to_lowercase())
+        .collect();
     let default_item_pos = items.iter().position(|i| i == &config.commit_type);
     let commit_type_index = FuzzySelect::with_theme(&theme)
         .with_prompt(_type)
@@ -130,7 +137,7 @@ fn main() {
 
     let commit_message: String = Input::with_theme(&theme)
         .with_prompt(_message)
-        .default("some message".into())
+        .default(config.commit_message)
         .interact_text()
         .unwrap();
 
@@ -147,8 +154,9 @@ fn main() {
         .expect("failed to commit files");
 
     let defaults = Config {
-        commit_type: commit_type,
-        commit_project: commit_project,
+        commit_type,
+        commit_project,
+        commit_message,
     };
 
     // always store defaults, such that the user has less work in the future
