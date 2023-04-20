@@ -143,8 +143,6 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    println!("{:?}", args);
-
     let config_from_temporary_file = Config::read_from_file();
     let theme = ColorfulTheme::default();
 
