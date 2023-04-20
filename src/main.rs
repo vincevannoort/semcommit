@@ -184,9 +184,17 @@ fn main() {
         .interact_text()
         .unwrap();
 
-    let complete_commit_message = format!("{commit_type}({commit_project}): {commit_message}");
+    let defaults = Config {
+        commit_type: commit_type.clone(),
+        commit_project: commit_project.clone(),
+        commit_message: commit_message.clone(),
+    };
+
+    // always store defaults, such that the user has less work in the future
+    defaults.store_in_file();
 
     // commit files
+    let complete_commit_message = format!("{commit_type}({commit_project}): {commit_message}");
     Command::new("git")
         .arg("commit")
         .arg("-m")
@@ -195,13 +203,4 @@ fn main() {
         .expect("failed to commit files")
         .wait()
         .expect("failed to commit files");
-
-    let defaults = Config {
-        commit_type,
-        commit_project,
-        commit_message,
-    };
-
-    // always store defaults, such that the user has less work in the future
-    defaults.store_in_file();
 }
