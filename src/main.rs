@@ -1,3 +1,4 @@
+use clap::Parser;
 use console::style;
 use dialoguer::{console::Term, theme::ColorfulTheme, Confirm, FuzzySelect, Input};
 use regex::Regex;
@@ -18,6 +19,12 @@ struct Config {
     commit_message: String,
 }
 
+#[derive(Debug, Clone, Display, clap::ValueEnum)]
+enum Mode {
+    Normal,
+    Emoji,
+}
+
 #[derive(Display, EnumIter)]
 enum CommitType {
     Feat,
@@ -27,6 +34,32 @@ enum CommitType {
     Refactor,
     Test,
     Chore,
+}
+
+impl CommitType {
+    fn get_emoji_by_type(self) -> String {
+        let emoji = match self {
+            CommitType::Feat => "🚀",
+            CommitType::Fix => "🔨",
+            CommitType::Docs => "📄",
+            CommitType::Style => "🎨",
+            CommitType::Refactor => "🧰",
+            CommitType::Test => "🧪",
+            CommitType::Chore => "🧹",
+        }
+        .to_string();
+        format!("{} {}", emoji, self.to_string().to_lowercase())
+    }
+    fn get_option_list_by_mode(mode: Mode) -> Vec<String> {
+        return match mode {
+            Mode::Normal => CommitType::iter()
+                .map(|ct| ct.to_string().to_lowercase())
+                .collect(),
+            Mode::Emoji => CommitType::iter()
+                .map(|ct| ct.get_emoji_by_type())
+                .collect(),
+        };
+    }
 }
 
 impl Default for Config {
@@ -99,7 +132,19 @@ fn check_for_unstaged_changes() {
     }
 }
 
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Name of the person to greet
+    #[clap(value_enum, short, long, default_value_t=Mode::Normal)]
+    mode: Mode,
+}
+
 fn main() {
+    let args = Args::parse();
+    println!("{:?}", args);
+
     let config_from_temporary_file = Config::read_from_file();
     let theme = ColorfulTheme::default();
 
@@ -116,18 +161,16 @@ fn main() {
     let _message = format!("{}", style("message").blue().bold());
     println!("{}({}): {}\n", _type, _project, _message);
 
-    let items: Vec<String> = CommitType::iter()
-        .map(|ct| ct.to_string().to_lowercase())
-        .collect();
-    let default_item_pos = items.iter().position(|i| i == &config.commit_type);
+    let commit_types: Vec<String> = CommitType::get_option_list_by_mode(args.mode);
+    let default_item_pos = commit_types.iter().position(|i| i == &config.commit_type);
     let commit_type_index = FuzzySelect::with_theme(&theme)
         .with_prompt(_type)
-        .items(&items)
+        .items(&commit_types)
         .default(default_item_pos.unwrap_or(0))
         .interact_on_opt(&Term::stderr())
         .unwrap()
         .unwrap();
-    let commit_type = items[commit_type_index].to_string();
+    let commit_type = commit_types[commit_type_index].to_string();
 
     let commit_project: String = Input::with_theme(&theme)
         .with_prompt(_project)

@@ -13,6 +13,7 @@ repository = "https://github.com/vincevannoort/semcommit"
 pre-release-commit-message = "chore(version): release {{crate_name}} version {{version}}"
 
 [dependencies]
+clap = { version = "4.2.4", features = ["derive"] }
 console = "0.15.2"
 dialoguer = {version="0.10.2", features=["fuzzy-select"]}
 regex = "1.7.1"
