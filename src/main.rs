@@ -139,6 +139,9 @@ struct Args {
     /// Name of the person to greet
     #[clap(value_enum, short, long, default_value_t=Mode::Normal)]
     mode: Mode,
+    /// Allow to not very commit
+    #[clap(long, short, action)]
+    no_verify: bool,
 }
 
 fn main() {
@@ -193,10 +196,15 @@ fn main() {
 
     // commit files
     let complete_commit_message = format!("{commit_type}({commit_project}): {commit_message}");
+    let mut commit_arguments = vec!["commit", "-m", &complete_commit_message];
+
+    // apply no-verify
+    if args.no_verify {
+        commit_arguments.push("--no-verify");
+    }
+
     Command::new("git")
-        .arg("commit")
-        .arg("-m")
-        .arg(&complete_commit_message)
+        .args(commit_arguments)
         .spawn()
         .expect("failed to commit files")
         .wait()
